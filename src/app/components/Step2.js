@@ -1,44 +1,42 @@
-// import Input from "./Input";
-
-// const Step2 = ({ inputValue, erros }) => {
-//   return (
-//     <div>
-//       <Input name="email" type="email" inputValue={inputValue} error={errors?.email} />
-//       <Input name="phonenumber" type="number" inputValue={inputValue} />
-//       <Input name="password" type="password" inputValue={inputValue} />
-//       <Input name="confirmPassword" type="password" inputValue={inputValue} />
-//     </div>
-//   );
-// };
-// export default Step2;
 import Input from "./Input";
 
-const Step2 = ({ inputValue, errors }) => {
+const Step2 = ({ values, inputValue, errors }) => {
   return (
     <div className="flex flex-col gap-4">
       <Input
+        label="Email"
         name="email"
         type="email"
+        value={values.email}
         inputValue={inputValue}
-        error={errors?.email}
+        error={errors.email}
       />
+
       <Input
+        label="Phone number"
         name="phonenumber"
-        type="text"
+        type="tel"
+        value={values.phonenumber}
         inputValue={inputValue}
-        error={errors?.phonenumber}
+        error={errors.phonenumber}
       />
+
       <Input
+        label="Password"
         name="password"
         type="password"
+        value={values.password}
         inputValue={inputValue}
-        error={errors?.name}
+        error={errors.password}
       />
+
       <Input
+        label="Confirm password"
         name="confirmPassword"
         type="password"
+        value={values.confirmPassword}
         inputValue={inputValue}
-        error={errors?.name}
+        error={errors.confirmPassword}
       />
     </div>
   );

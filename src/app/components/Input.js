@@ -1,17 +1,22 @@
 const Input = ({ label, name, type = "text", value, inputValue, error }) => {
   const handleChange = (event) => {
     if (type === "file") {
-      inputValue(event.target.files?.[0] ?? null, name);
+      const file = event.target.files?.[0] ?? null;
+      if (file && file.size > 5 * 1024 * 1024) {
+        inputValue(null, name);
+        return;
+      }
+      inputValue(file, name);
       return;
     }
     inputValue(event.target.value, name);
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="flex gap-1" htmlFor={name}>
-        <span className="text-black">{label ?? name}</span>
-        <span className="text-2xl text-rose-500">*</span>
+    <div className="flex flex-col gap-1.5">
+      <label className="flex gap-1 text-sm font-medium" htmlFor={name}>
+        <span className="text-gray-800">{label ?? name}</span>
+        <span className="text-rose-500">*</span>
       </label>
 
       <input
@@ -19,17 +24,28 @@ const Input = ({ label, name, type = "text", value, inputValue, error }) => {
         name={name}
         type={type}
         onChange={handleChange}
+        placeholder={label ?? name}
         {...(type === "file" ? {} : { value: value ?? "" })}
-        className={`w-full border-2 p-2 rounded-md text-black outline-none ${
-          error ? "border-red-500" : "border-[#CBD5E1]"
+        className={`w-full border px-3 py-2.5 rounded-md text-gray-900 placeholder-gray-400 outline-none transition-all ${
+          error
+            ? "border-red-500 bg-red-50"
+            : "border-gray-300 bg-white focus:border-gray-400"
         }`}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${name}-error` : undefined}
       />
 
       {type === "file" && value?.name && (
-        <p className="text-sm text-[#8E8E8E]">{value.name}</p>
+        <p className="text-xs text-gray-600 mt-1">
+          ✓ {value.name} ({(value.size / 1024).toFixed(2)} KB)
+        </p>
       )}
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && (
+        <p className="text-red-600 text-xs font-medium mt-1" id={`${name}-error`} role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 };

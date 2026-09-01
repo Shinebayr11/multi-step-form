@@ -1,7 +1,7 @@
 "use client";
 
 import * as z from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import Step1 from "./components/Step1";
 import Step2 from "./components/Step2";
@@ -33,7 +33,19 @@ const stepSchemas = [
     dateOfBirth: z.string().min(1, "Date of birth required"),
     profileImage: z
       .any()
-      .refine((file) => file instanceof File, "Profile image required"),
+      .refine((file) => file instanceof File, "Profile image required")
+      .refine(
+        (file) => file instanceof File && file.size <= 5 * 1024 * 1024,
+        "File size must be less than 5MB"
+      )
+      .refine(
+        (file) =>
+          file instanceof File &&
+          ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
+            file.type
+          ),
+        "Only JPEG, PNG, GIF, and WebP images are allowed"
+      ),
   }),
 ];
 
@@ -50,19 +62,45 @@ const emptyForm = {
 };
 
 export default function Home() {
-  const [items, setItems] = useState(0);
-  const [utga, setUtga] = useState(emptyForm);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState({});
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const isDone = items >= steps.length;
-  const StepComponent = steps[items];
+  useEffect(() => {
+    const savedFormData = localStorage.getItem("formData");
+    const savedStep = localStorage.getItem("currentStep");
 
-  const inputValue = (inputValuecontent, key) => {
-    setUtga((prev) => ({ ...prev, [key]: inputValuecontent }));
+    if (savedFormData) {
+      setFormData(JSON.parse(savedFormData));
+    }
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep, 10));
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("formData", JSON.stringify(formData));
+    }
+  }, [formData, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("currentStep", currentStep.toString());
+    }
+  }, [currentStep, isLoaded]);
+
+  const isDone = currentStep >= steps.length;
+  const StepComponent = steps[currentStep];
+
+  const updateFormField = (value, key) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleOnclick = () => {
-    const result = stepSchemas[items].safeParse(utga);
+    const result = stepSchemas[currentStep].safeParse(formData);
 
     if (!result.success) {
       const newErrors = {};
@@ -76,52 +114,55 @@ export default function Home() {
     }
 
     setErrors({});
-    setItems(items + 1);
+    setCurrentStep(currentStep + 1);
   };
 
   const handleBackclick = () => {
-    if (items === 0) return;
+    if (currentStep === 0) return;
 
     setErrors({});
-    setItems(items - 1);
+    setCurrentStep(currentStep - 1);
   };
 
   const handleReset = () => {
-    setUtga(emptyForm);
+    setFormData(emptyForm);
     setErrors({});
-    setItems(0);
+    setCurrentStep(0);
   };
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="flex w-[480px] h-[655px] p-8 flex-col gap-4 bg-white justify-between">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+      <div className="flex w-full max-w-md p-8 flex-col gap-6 bg-white rounded-lg shadow-md justify-between">
         {isDone ? (
-          <Success data={utga} onReset={handleReset} />
+          <Success data={formData} onReset={handleReset} />
         ) : (
           <>
-            <div className="flex flex-col gap-4 justify-between">
+            <div className="flex flex-col gap-6 flex-1">
               <Header />
               <StepComponent
-                values={utga}
-                inputValue={inputValue}
+                values={formData}
+                inputValue={updateFormField}
                 errors={errors}
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 pt-4">
               <button
                 onClick={handleBackclick}
-                disabled={items === 0}
-                className="w-1/3 border-2 text-black rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={currentStep === 0}
+                className="flex-1 px-4 py-2.5 border-2 border-gray-800 text-gray-800 font-medium rounded-md disabled:opacity-40 disabled:cursor-not-allowed disabled:border-gray-400 hover:bg-gray-100 transition-colors"
+                aria-label="Go to previous step"
               >
                 Back
               </button>
 
               <button
                 onClick={handleOnclick}
-                className="flex items-center justify-center w-2/3 h-10 bg-black text-white text-xl rounded-md"
+                className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-black text-white font-medium rounded-md hover:bg-gray-900 transition-colors"
+                aria-label={`Continue to step ${currentStep + 2} of ${steps.length}`}
               >
-                {items + 1}/{steps.length} Continue
+                Continue {currentStep + 1}/{steps.length}
+                <span className="text-lg">›</span>
               </button>
             </div>
           </>
